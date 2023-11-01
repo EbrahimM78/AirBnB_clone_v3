@@ -16,9 +16,8 @@ import sqlalchemy
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-classes = {'BaseModel': BaseModel, 'User': User, 'Place': Place,
-           'State': State, 'City': City, 'Amenity': Amenity,
-           'Review': Review}
+classes = {"Amenity": Amenity, "City": City,
+           "Place": Place, "Review": Review, "State": State, "User": User}
 
 
 class DBStorage:
@@ -43,24 +42,25 @@ class DBStorage:
 
     def all(self, cls=None):
         """query on the current database session"""
-        if cls is not None:
-            if type(cls) == str:
-                classes = {
-                    'BaseModel': BaseModel, 'User': User, 'Place': Place,
-                    'State': State, 'City': City, 'Amenity': Amenity,
-                    'Review': Review
-                }
-                cls = classes[cls]
-            objs = self.__session.query(cls)
-            return {"{}.{}".format(type(o).__name__, o.id): o for o in objs}
-        else:
-            classes = [State, City, User, Place, Review, Amenity]
-            data = {}
-            for cls in classes:
-                query = self.__session.query(cls).all()
-                data.update({"{}.{}".format(type(obj).__name__, obj.id):
-                            obj for obj in query})
-        return data
+        new_dict = {}
+        for clss in classes:
+            if cls is None or cls is classes[clss] or cls is clss:
+                objs = self.__session.query(classes[clss]).all()
+                for obj in objs:
+                    key = obj.__class__.__name__ + '.' + obj.id
+                    new_dict[key] = obj
+        return (new_dict)
+
+    def get(self, cls, id):
+        """retrieves an object of a class with id"""
+        obj = None
+        if cls is not None and issubclass(cls, BaseModel):
+            obj = self.__session.query(cls).filter(cls.id == id).first()
+        return obj
+
+    def count(self, cls=None):
+        """retrieves the number of objects of a class or all (if cls==None)"""
+        return len(self.all(cls))
 
     def new(self, obj):
         """add the object to the current database session"""
@@ -85,27 +85,3 @@ class DBStorage:
     def close(self):
         """call remove() method on the private session attribute"""
         self.__session.remove()
-
-    def get(self, cls, id):
-        """Returns the object based on the class and its ID,
-        or None if not found
-        """
-        if cls not in classes.values():
-            return None
-        if cls and id:
-            data = self.__session.query(cls).filter(cls.id == id).first()
-            return data
-        return None
-
-    def count(self, cls=None):
-        """Returns the number of objects in storage matching the
-        given class. If no class is passed, returns the count of
-        all objects in storage.
-        """
-        total = 0
-        if cls is not None:
-            data = self.all(cls)
-            total = len(data)
-        else:
-            total = len(self.all())
-        return (total)
