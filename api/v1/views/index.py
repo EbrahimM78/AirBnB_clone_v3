@@ -1,36 +1,30 @@
 #!/usr/bin/python3
-"""Define routes for blueprint
-"""
-
+""" Module for index route of the api to handle index requests """
 from api.v1.views import app_views
 from flask import jsonify
+import models
 from models import storage
+from models.base_model import BaseModel
+from models.place import Place
+from models.review import Review
+from models.city import City
+from models.amenity import Amenity
+from models.user import User
+from models.state import State
 
 
-@app_views.route('/status', strict_slashes=False)
+@app_views.route('/status')
 def status():
-    """Return status of application
-    """
-    return jsonify({'status': 'OK'})
+    """ Returns a JSON response to an HTTP request"""
+    return jsonify({"status": "OK"})
 
 
-@app_views.route('/stats', strict_slashes=False)
-def stats():
-    """Retrieve count of objects in storage
-    """
-    from models.amenity import Amenity
-    from models.city import City
-    from models.place import Place
-    from models.review import Review
-    from models.state import State
-    from models.user import User
-
+@app_views.route('/stats')
+def api_status():
+    """checks the API stats of the classes"""
     classes = {"amenities": Amenity, "cities": City,
                "places": Place, "reviews": Review,
                "states": State, "users": User}
-    json_dict = {}
-
-    for name, cls in classes.items():
-        json_dict.update({name: storage.count(cls)})
-
-    return jsonify(json_dict)
+    for key in classes:
+        classes[key] = storage.count(classes[key])
+    return jsonify(classes)
